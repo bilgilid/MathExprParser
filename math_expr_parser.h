@@ -1,8 +1,8 @@
 /*
 Program:        Math Expression Parser v1.0.
 Author:         Deniz Bilgili
-		        Technical University of Istanbul, 
-				Department of Mechanical Engineering
+		Technical University of Istanbul, 
+		Department of Mechanical Engineering
 Date published: 05.2017
 
 This code is shared publicly, under MIT License. To see the license, please 
