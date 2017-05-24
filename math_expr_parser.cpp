@@ -1,9 +1,9 @@
 #include "math_expr_parser.h"
 
 void MathExprParser::m_make_rpn() {
-	/*
-		Converts infit notation to reverse polish notation (RPN).
-	*/
+/*
+	Converts infit notation to reverse polish notation (RPN).
+*/
 
 	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
 
@@ -131,7 +131,6 @@ void MathExprParser::m_make_rpn() {
 }
 
 double MathExprParser::m_calc_rpn() {
-
 /*
 	Calculates the expression given in reverse polish notation, and returns the 
 	result as double.
@@ -224,10 +223,10 @@ double MathExprParser::calculate(const vector_Var& variables) {
 
 bool MathExprParser::m_isOperator(const std::string::const_iterator& it, 
 	const std::string::const_iterator& itBegin) const {
-	/*
-		it:      The string iterator iterating over the input expression.
-		itBegin: The iterator pointing at the end of the input expression.
-	*/
+/*
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the end of the input expression.
+*/
 
 	char token = *it;
 
@@ -253,9 +252,9 @@ bool MathExprParser::m_isOperator(const std::string::const_iterator& it,
 }
 
 bool MathExprParser::m_isOperator(const std::string& token) const {
-	/*
-		Checks if token, which is taken from the number stack, is an operator.
-	*/
+/*
+	Checks if token, which is taken from the number stack, is an operator.
+*/
 
 	if(token == "+") return true;
 	if(token == "-") return true;
@@ -268,10 +267,10 @@ bool MathExprParser::m_isOperator(const std::string& token) const {
 
 bool MathExprParser::m_isNumber(const std::string::const_iterator& it,
 	const std::string::const_iterator& itBegin) const {
-	/*
+/*
 	it     : the string iterator iterating over the input expression.
 	itBegin: the iterator pointing at the end of the input expression.
-	*/
+*/
 
 	char token = *it;
 	
@@ -304,9 +303,9 @@ bool MathExprParser::m_isNumber(const std::string::const_iterator& it,
 }
 
 bool MathExprParser::m_isNumber(const std::string& token) const {
-	/*
-		Checks if token, which is taken from the number stack, is a number.
-	*/
+/*
+	Checks if token, which is taken from the number stack, is a number.
+*/
 
 	try {
 		std::stod(token);
