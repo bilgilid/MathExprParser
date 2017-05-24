@@ -179,8 +179,6 @@ double MathExprParser::m_calc_rpn() {
 		throw;
 	}
 
-	//if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
-
 	return numberStack.top();
 }
 
