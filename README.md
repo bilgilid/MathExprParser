@@ -1,58 +1,65 @@
-# MathExprParser
-Mathematical expression parser and calculator object for real-valued input.
+# MathInterpreter
+Mathematical expression interpreter for real-valued input.
 Works only with real numbers and returns real numbers. Uses the Shunting
 Yard Algorithm.
 
 ## Steps for usage:
 
-Copy and paste `math_expr_parser.h` and `math_expr_parser.cpp` files to your project folder. And then include the header file.
-
 ### A. Without variables
-  1. Have the mathematical expression you want to solve stored in a string
-    in infix notation
+		1. Have the mathematical expression you want to solve stored in a 
+		   string in infix notation
+		  
+			e.g. std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";
 
-    e.g. `std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";`
+		2. Create a MathInterpreter object and call set_input_expr() to set the
+		   input expression by passing the expression to it.
+		
+			e.g. MathInterpreter inter;
+				 inter.set_input_expr(expr);
 
-  2. Pass the expression to the constructor and create the parser object
-
-    e.g. `MathExprParser mep(expr);`
-
-  3. Call `calculate()` to parse and calculate the expression and save it in
-    a double.
-
-    e.g. `double result = mep.calculate();`
+		3. Call calculate() to calculate the expression and save it in a 
+		   double.
+		   
+			e.g. double result = inter.calculate();
 
 ### B. With variables
-  1. Have the mathematical expression you want to solve stored in a string 
-    in infix notation. Use ' character before and after variable names to
-    mark variables.
+		1. Have the mathematical expression you want to solve stored in a 
+		   string in infix notation. Use ' character before and after variable 
+		   names to mark variables.
 
-    e.g. `std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";`
-         x and y are variables.
+			e.g. std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";
+				 x and y are variables.
+		
+		2. Create a MathInterpreter object and call set_input_expr() to set the
+		input expression by passing the expression to it.
 
-  2. Pass the expression to the constructor and create the parser object
+			e.g. MathInterpreter inter;
+				 inter.set_input_expr(expr);
 
-    e.g. `MathExprParser mep(expr);`
+		3. Create a vector of strings and store variable names in it. Then set
+		   this vector as variable table, using set_variable_table().
 
-  3. Create Var objects for each variable in the input expression and
-    store all Var objects in a vector
+			e.g. vector_string varTable;
+				 varTable.push_back("x");
+				 varTable.push_back("y");
 
-    e.g. 
-    ```
-       Var x{"x", 1.13};
-       Var y{"y", 22.8};
+				 inter.set_variable_table(varTable);
 
-       vector_Var vars;
-       vars.push_back(x);
-       vars.push_back(y);
-    ```
-    **!!** In VAR objects, variable names must **NOT** have ' characters. ' are
-       used only in the input expression in order to mark variables.
+			!! In variable tables, variable names must NOT have ' characters. 
+			   ' are used only in the input expression in order to mark 
+			   variables.
 
-  4. Call `calculate()` and pass the vector of Vars to parse and calculate 
-    the expression and save it in a double.
+		4. Create a vector of doubles and store the values of variables in the
+		   order given in the variable table.
 
-    e.g. `double result = mep.calculate(vars);`
+			e.g. vector_double varValues;
+				 varValues.push_back(68); // first x
+				 varValues.push_back(96); // then y
+
+		5. Call calculate() and pass the vector of values to calculate the 
+		   expression and save it in a double.
+
+			e.g. double result = inter.calculate(varValues);
 
 ## Notes:
   - Function names can be all lowercase or all uppercase.
