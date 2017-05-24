@@ -63,19 +63,8 @@ class BAD_INIT: public std::exception {
 
 public:
 	virtual const char* what() const noexcept {
-		return "Bad initialization of MathInterpreter object. Input expression "
-			"was not set.";
-	}
-
-};
-
-class BAD_RPN: public std::exception {
-
-public:
-	virtual const char* what() const noexcept {
-		return "The reverse polish notation (RPN) sent to calculation "
-			"is empty. Make sure to call init() immediately after creating the"
-			" MathInterpreter object.";
+		return "Bad initialization of MathInterpreter object. Input "
+			"expression was not set.";
 	}
 
 };
@@ -128,7 +117,11 @@ class MathInterpreter {
 			e.g. MathInterpreter inter;
 				 inter.set_input_expr(expr);
 
-		3. Call calculate() to calculate the expression and save it in a 
+		3. Call init() to initialize the interpreter.
+
+			e.g. inter.init();
+
+		4. Call calculate() to calculate the expression and save it in a 
 		   double.
 		   
 			e.g. double result = inter.calculate();
@@ -142,7 +135,7 @@ class MathInterpreter {
 				 x and y are variables.
 		
 		2. Create a MathInterpreter object and call set_input_expr() to set the
-		input expression by passing the expression to it.
+		   input expression by passing the expression to it.
 
 			e.g. MathInterpreter inter;
 				 inter.set_input_expr(expr);
@@ -160,6 +153,10 @@ class MathInterpreter {
 			   ' are used only in the input expression in order to mark 
 			   variables.
 
+		3. Call init() to initialize the interpreter.
+
+			e.g. inter.init();
+
 		4. Create a vector of doubles and store the values of variables in the
 		   order given in the variable table.
 
@@ -172,8 +169,11 @@ class MathInterpreter {
 
 			e.g. double result = inter.calculate(varValues);
 
+
 	Notes:
 		- Function names can be all lowercase or all uppercase.
+		- Pi is recognized automatically when entered as a variable.
+			i.e. sin(2*'pi'*5) or sin(2*'PI'*5)
 
 
 	Limitations:
@@ -193,12 +193,15 @@ public:
 
 	void set_input_expr(const std::string& input);
 	void set_variable_table(const vector_string& variables);
+	void init();
 
 	virtual ~MathInterpreter() {}
 
 private:
 	std::string m_inputExpr;
 	std::string m_rpn;
+	vector_string m_calcMap;
+	
 	vector_string m_variableTable;
 
 	bool m_isOperator(const std::string::const_iterator& it,
@@ -209,7 +212,10 @@ private:
 		const std::string::const_iterator& itBegin) const;
 	bool m_isNumber(const std::string& token) const;
 
+	bool m_isVariable(const std::string& token) const;
 	bool m_variableExists(const std::string& varName) const;
+
+	bool m_syntaxGood() const;
 
 	FUNCTION m_isFunction(const std::string& token) const;
 
@@ -220,7 +226,9 @@ private:
 	double m_calc_function(double val, FUNCTION func) const;
 
 	void m_make_rpn();
-	std::string m_assign_values(const vector_double& variables) const;
+	void m_make_calc_map();
+
+	std::string m_assign_values(const vector_double& vals) const;
 	double m_calc_rpn(const std::string& rpn) const;
 
 };

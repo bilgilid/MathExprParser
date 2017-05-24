@@ -1,6 +1,11 @@
 #include "math_interpreter.h"
 
 void MathInterpreter::set_input_expr(const std::string& input) {
+/*
+	Sets the input expression which is in infix notation. Generates the
+	reverse polish notation (RPN) expression from the input expression.
+	Must be called immediately after the object creation.
+*/
 
 	m_inputExpr = input;
 	m_make_rpn();
@@ -8,8 +13,11 @@ void MathInterpreter::set_input_expr(const std::string& input) {
 }
 
 void MathInterpreter::set_variable_table(const vector_string& variables) {
-
-	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
+/*
+	Sets the variables to the variable table. Only the variables registered in
+	the variable table are known to the interpreter. Must be called after
+	set_input_expr() and before init() to set the variable table.
+*/
 
 	for(auto& var: variables) {
 			if(!m_variableExists(var)) throw UNKNOWN_VARIABLE(var);
@@ -19,9 +27,21 @@ void MathInterpreter::set_variable_table(const vector_string& variables) {
 
 }
 
+void MathInterpreter::init() {
+/*
+	Checks the input expression syntax by testing the rpn with test values.
+	If no syntax errors are present, generates the calculation map. Must be
+	called after set_variable_table() to initialize the interpreter.
+*/
+
+	if(!m_syntaxGood()) throw INPUT_EXPR_SYNTAX_ERROR();
+	m_make_calc_map();
+
+}
+
 void MathInterpreter::m_make_rpn() {
 /*
-	Converts infit notation to reverse polish notation (RPN).
+	Converts infix notation to reverse polish notation (RPN).
 */
 
 	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
@@ -84,7 +104,7 @@ void MathInterpreter::m_make_rpn() {
 			it++;
 		}
 		else if(m_isNumber(it, itBegin)) {
-			std::string parsedNumber; // can be real integer or decimal number
+			std::string parsedNumber;
 
 			while(it != inputExprNoWS.cend() && m_isNumber(it, itBegin)) {
 				parsedNumber.push_back(*it++);
@@ -136,15 +156,41 @@ void MathInterpreter::m_make_rpn() {
 		outputQueue.pop();
 	}
 
-	// Check the RPN and throw syntax error if a ( is found.
-	std::istringstream issTestLParenthesis(returnRPN);
-	std::string tokenTestLParenthesis;
+	m_rpn = returnRPN;
+	
+}
 
-	while(issTestLParenthesis >> tokenTestLParenthesis) {
-		if(tokenTestLParenthesis == "(") throw INPUT_EXPR_SYNTAX_ERROR();
+void MathInterpreter::m_make_calc_map() {
+/*
+	Generates the calculation map. Calculation map marks numbers, operators,
+	functions and variables before the RPN is assigned numerical values for
+	variables which speeds up the calculations.
+
+	Variables are marked as numbers and functions are marked with their enum
+	values.
+*/
+
+	vector_string calcMap;
+	std::string rpn = m_rpn;
+	std::istringstream iss(rpn);
+	std::string token;
+
+	while(iss >> token) {
+		if(m_isNumber(token)) {
+			calcMap.push_back("N");
+		}
+		else if(m_isOperator(token)) {
+			calcMap.push_back("O");
+		}
+		else if(auto func = m_isFunction(token)) {
+			calcMap.push_back(std::to_string(func));
+		}
+		else if(m_isVariable(token)) {
+			calcMap.push_back("N");
+		}
 	}
 
-	m_rpn = returnRPN;
+	m_calcMap = calcMap;
 	
 }
 
@@ -154,64 +200,53 @@ double MathInterpreter::m_calc_rpn(const std::string& rpn) const {
 	result as double.
 */
 
-	if(rpn.empty() || rpn == " ") throw BAD_RPN();
-
 	std::stack<double> numberStack;
 	
 	std::istringstream iss(rpn);
 	std::string token;
 
-	try {
-		while(iss >> token) {
-			if(m_isNumber(token)) {
-				numberStack.push(std::stod(token));
-			}
-			else if(m_isOperator(token)) {
-				if(numberStack.size() < 2) throw INPUT_EXPR_SYNTAX_ERROR();
+	for(auto& tag: m_calcMap) {
+		iss >> token;
 
-				double rVal = numberStack.top();
-				numberStack.pop();
-				double lVal = numberStack.top();
-				numberStack.pop();
-
-				char op = token.c_str()[0];
-
-				double operatorCalcResult = m_calc_operator(lVal, rVal, op);
-				numberStack.push(operatorCalcResult);
-			}
-			else if(auto func = m_isFunction(token)) {
-				if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
-
-				double val = numberStack.top();
-				numberStack.pop();
-
-				double functionCalcResult = m_calc_function(val, func);
-				numberStack.push(functionCalcResult);
-			}
-			else {
-				throw INPUT_EXPR_SYNTAX_ERROR();
-			}
+		if(tag == "N") {
+			numberStack.push(std::stod(token));
 		}
-	}
-	catch(const std::exception& e) {
-		throw;
+		else if(tag == "O") {
+			double rVal = numberStack.top();
+			numberStack.pop();
+			double lVal = numberStack.top();
+			numberStack.pop();
+
+			char op = token.c_str()[0];
+
+			double operatorCalcResult = m_calc_operator(lVal, rVal, op);
+			numberStack.push(operatorCalcResult);
+		}
+		else {
+			FUNCTION func = (FUNCTION)std::stoi(tag);
+
+			double val = numberStack.top();
+			numberStack.pop();
+
+			double functionCalcResult = m_calc_function(val, func);
+			numberStack.push(functionCalcResult);
+		}
 	}
 
 	return numberStack.top();
 }
 
-std::string MathInterpreter::m_assign_values(
-	const vector_double& variables) const {
-
-	if(m_variableTable.size() != variables.size())
-		throw VARIABLE_MISMATCH();
+std::string MathInterpreter::m_assign_values(const vector_double& vals) const {
+/*
+	Assigns numerical values to variables and updates the RPN.
+*/
 
 	std::string rpnWithValuesAssigned = m_rpn;
-
-	for(size_t i = 0; i < variables.size(); i++) {
+	
+	for(size_t i = 0; i < vals.size(); i++) {
 		std::string variableName = m_variableTable[i];
 
-		std::string variableValue = std::to_string(variables[i]);
+		std::string variableValue = std::to_string(vals[i]);
 		size_t variableSize = variableName.size();
 
 		size_t pos;
@@ -221,12 +256,17 @@ std::string MathInterpreter::m_assign_values(
 			rpnWithValuesAssigned.replace(pos, variableSize, variableValue);
 		}
 	}
-
+	
 	return rpnWithValuesAssigned;
 
 }
 
 double MathInterpreter::calculate(const vector_double& variables) {
+/*
+	Calculates the RPN expression with given values or variables.
+*/
+
+	if(m_variableTable.size() != variables.size()) throw VARIABLE_MISMATCH();
 
 	double result;
 
@@ -339,18 +379,92 @@ bool MathInterpreter::m_isNumber(const std::string& token) const {
 
 }
 
+bool MathInterpreter::m_isVariable(const std::string& token) const {
+/*
+	Checks if the token taken from the input expression is a variable.
+*/
+
+	for(auto& var: m_variableTable) {
+		if(var == token) return true;
+	}
+
+	return false;
+
+}
+
 bool MathInterpreter::m_variableExists(const std::string& varName) const {
 /*
 	Checks if the varible varName exists in the input expression.
 */
-
-	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
 
 	std::string varNameInQuotes = "\'" + varName + "\'";
 
 	if(m_inputExpr.find(varNameInQuotes) == std::string::npos)
 		return false;
 		
+	return true;
+
+}
+
+bool MathInterpreter::m_syntaxGood() const {
+/*
+	Tests the symbolic RPN with test data for syntax errors.
+*/
+
+	if(m_rpn.empty() || m_rpn == " ") return false;
+	
+	vector_double testData;
+
+	for(size_t i = 0; i < m_variableTable.size(); i++)
+		testData.push_back(0.5);
+
+	std::string testRPN;
+
+	// Check the RPN and throw syntax error if a ( is found.
+	std::istringstream issTestLParenthesis(testRPN);
+	std::string tokenTestLParenthesis;
+
+	while(issTestLParenthesis >> tokenTestLParenthesis) {
+		if(tokenTestLParenthesis == "(") return false;
+	}
+
+	testRPN = m_assign_values(testData);
+	
+	std::stack<double> numberStack;
+	std::istringstream iss(testRPN);
+	std::string token;
+	
+	while(iss >> token) {
+		if(m_isNumber(token)) {
+			numberStack.push(std::stod(token));
+		}
+		else if(m_isOperator(token)) {
+			if(numberStack.size() < 2) return false;
+			
+			double rVal = numberStack.top();
+			numberStack.pop();
+			double lVal = numberStack.top();
+			numberStack.pop();
+
+			char op = token.c_str()[0];
+
+			double operatorCalcResult = m_calc_operator(lVal, rVal, op);
+			numberStack.push(operatorCalcResult);
+		}
+		else if(auto func = m_isFunction(token)) {
+			if(numberStack.empty()) return false;
+			
+			double val = numberStack.top();
+			numberStack.pop();
+
+			double functionCalcResult = m_calc_function(val, func);
+			numberStack.push(functionCalcResult);
+		}
+		else {
+			return false;
+		}
+	}
+
 	return true;
 
 }
@@ -422,7 +536,7 @@ double MathInterpreter::m_calc_operator(double lVal, double rVal,
 		case '^':
 			return std::pow(lVal, rVal);
 		default:
-			throw INPUT_EXPR_SYNTAX_ERROR();
+			return 0.0;
 	}
 
 }
@@ -431,7 +545,7 @@ double MathInterpreter::m_calc_function(double val, FUNCTION func) const {
 
 	switch(func) {
 		case NONE:
-			throw INPUT_EXPR_SYNTAX_ERROR();
+			return 0.0;
 		case LOG:
 			return std::log(val);
 		case LOG10:
@@ -464,7 +578,7 @@ double MathInterpreter::m_calc_function(double val, FUNCTION func) const {
 		case ABS:
 			return std::abs(val);
 		default:
-			throw INPUT_EXPR_SYNTAX_ERROR();
+			return 0.0;
 	}
 
 }
