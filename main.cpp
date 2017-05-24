@@ -9,7 +9,7 @@ int main() {
 
 	Example 1: Expression with no variables.
 	Expression: 1.56 + sin(rad(37.81)) * log(sqrt(75))
-	Result    : 2.88341...
+	Result    : 2.88341... 
 	*/
 
 	std::string expr1 = "1.56 + sin(rad(37.81)) * log(sqrt(75))";
