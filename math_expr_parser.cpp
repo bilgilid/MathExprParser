@@ -164,6 +164,7 @@ double MathExprParser::m_calc_rpn() {
 			}
 			else if(auto func = m_isFunction(token)) {
 				if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
+
 				double val = numberStack.top();
 				numberStack.pop();
 
@@ -182,7 +183,7 @@ double MathExprParser::m_calc_rpn() {
 	return numberStack.top();
 }
 
-double MathExprParser::calculate(vector_Var& variables) {
+double MathExprParser::calculate(const vector_Var& variables) {
 
 	for(size_t i = 0; i < variables.size(); i++) {
 		std::string variableName = variables[i].name;
