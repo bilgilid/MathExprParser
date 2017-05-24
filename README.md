@@ -62,6 +62,7 @@ Yard Algorithm.
 
 ## Notes:
   - Function names can be all lowercase or all uppercase.
+  - Pi is automatically detected if entered as a variable (i.e. 'PI' or 'pi').
 
 ## Limitations:
   - Supported operators: +, -, *, /, %, ^
