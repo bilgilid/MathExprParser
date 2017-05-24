@@ -1,52 +1,101 @@
 #include <iostream>
-#include "math_expr_parser.h"
+#include "math_interpreter.h"
 
 int main() {
 
-	// sin(rad(12.67)*exp(1.13)) + TAN(COS(RAD(32.1)))*LOG(12) = 3.44461...
+	/*
+	
+	Example 1: Expression with no variables.
 
-	// without variables
-	std::string s1 = "sin(rad(12.67)*exp(1.13)) + TAN(COS(RAD(32.1)))*LOG(12)";
+	Expression: 1.56 + sin(rad(37.81)) * log(sqrt(75))
+	Result    : 2.88341...
+
+	*/
+
+	std::string expr1 = "1.56 + sin(rad(37.81)) * log(sqrt(75))";
 
 	try {
-		MathExprParser example1Parser(s1);
-		double result1 = example1Parser.calculate();
+		MathInterpreter inter;
+		inter.set_input_expr(expr1);
 
-		std::cout << "EXAMPLE 1: Without variables\n";
-		std::cout << "result = " << result1 << std::endl;
+		double result1 = inter.calculate();
+		std::cout << expr1 << " = " << result1 << std::endl;
+	}
+	catch(const std::exception& e) {
+		std::cout << e.what() << std::endl;
+	}
+	
+
+	/*
+
+	Example 2: Expression with variables having a single value.
+
+	Expression: 1.56 + sin(rad('theta')) * log(sqrt('len'))
+				for theta = 37.81 degrees and len = 75
+	Result    : 2.88341...
+
+	*/
+
+	std::string expr2 = "1.56 + sin(rad('theta')) * log(sqrt('len'))";
+
+	try {
+		MathInterpreter inter;
+		inter.set_input_expr(expr2);
+
+		vector_string varTable;
+		varTable.push_back("theta");
+		varTable.push_back("len");
+
+		inter.set_variable_table(varTable);
+
+		vector_double varValues;
+		varValues.push_back(37.81);
+		varValues.push_back(75);
+
+		double result2 = inter.calculate(varValues);
+
+		std::cout << expr2 << " = " << result2 << std::endl;
 	}
 	catch(const std::exception& e) {
 		std::cout << e.what() << std::endl;
 	}
 
-	std::cout << "\n";
+	/*
 
-	// with variables
-	std::string s2 = 
-		"sin(rad('var2')*exp('var1')) + TAN(COS(RAD('var3')))*LOG('var4')";
+	Example 3: Expression with variables having multiple values.
+
+	Expression: 1.56 + sin(rad('theta')) * log(sqrt('len'))
+				for theta between 0 and 90 degrees and len = 75
+	Result    : Multiple values
+
+	*/
+
+	std::string expr3 = "1.56 + sin(rad('thetai')) * log(sqrt('len'))";
 
 	try {
-		Var var1 {"var1", 1.13};
-		Var var2 {"var2", 12.67};
-		Var var3 {"var3", 32.1};
-		Var var4 {"var4", 12};
+		MathInterpreter inter;
+		inter.set_input_expr(expr3);
 
-		vector_Var v;
+		vector_string varTable;
+		varTable.push_back("theta");
+		varTable.push_back("len");
 
-		v.push_back(var1);
-		v.push_back(var2);
-		v.push_back(var3);
-		v.push_back(var4);
+		inter.set_variable_table(varTable);
 
-		MathExprParser mep(s2);
-		double result2 = mep.calculate(v);
+		for(size_t i = 0; i < 101; i++) {
+			vector_double varValues;
+			varValues.push_back(i*0.9);
+			varValues.push_back(75);
+			
+			double result3 = inter.calculate(varValues);
 
-		std::cout << "EXAMPLE 2: With variables\n";
-		std::cout << "result = " << result2 << std::endl;
+			std::cout << expr3 << " = " << result3 << std::endl;
+		}
 	}
 	catch(const std::exception& e) {
 		std::cout << e.what() << std::endl;
 	}
+
 	
 	getchar();
 	return 0;
