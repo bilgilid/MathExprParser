@@ -193,7 +193,7 @@ double MathInterpreter::m_calc_rpn(const std::string& rpn) const {
 			}
 		}
 	}
-	catch(const INPUT_EXPR_SYNTAX_ERROR& e) {
+	catch(const std::exception& e) {
 		throw;
 	}
 
@@ -234,10 +234,7 @@ double MathInterpreter::calculate(const vector_double& variables) {
 		std::string rpnWithVariablesAssigned = m_assign_values(variables);
 		result = m_calc_rpn(rpnWithVariablesAssigned);
 	}
-	catch(const BAD_INIT& e) {
-		throw;
-	}
-	catch(const BAD_RPN& e) {
+	catch(const std::exception& e) {
 		throw;
 	}
 	
