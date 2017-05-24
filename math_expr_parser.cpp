@@ -5,7 +5,7 @@ void MathExprParser::m_make_rpn() {
 		Converts infit notation to reverse polish notation (RPN).
 	*/
 
-	if(m_inputExpr.empty()) throw BAD_INIT();
+	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
 
 	// necessary containers
 	std::stack<std::string> operatorStack;
@@ -150,11 +150,10 @@ double MathExprParser::m_calc_rpn() {
 				numberStack.push(std::stod(token));
 			}
 			else if(m_isOperator(token)) {
-				if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
+				if(numberStack.size() < 2) throw INPUT_EXPR_SYNTAX_ERROR();
+
 				double rVal = numberStack.top();
 				numberStack.pop();
-
-				if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
 				double lVal = numberStack.top();
 				numberStack.pop();
 
@@ -162,7 +161,6 @@ double MathExprParser::m_calc_rpn() {
 
 				double operatorCalcResult = m_calc_operator(lVal, rVal, op);
 				numberStack.push(operatorCalcResult);
-
 			}
 			else if(auto func = m_isFunction(token)) {
 				if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
@@ -181,7 +179,7 @@ double MathExprParser::m_calc_rpn() {
 		throw;
 	}
 
-	if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
+	//if(numberStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
 
 	return numberStack.top();
 }
@@ -328,7 +326,7 @@ bool MathExprParser::m_variableExists(const std::string& varName) const {
 	Checks if the varible varName exists in the input expression.
 */
 
-	if(m_inputExpr.empty()) throw BAD_INIT();
+	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
 
 	std::string modifiedVarName = "'" + varName + "'";
 
