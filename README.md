@@ -76,7 +76,9 @@ Yard Algorithm.
 
 ## Notes:
   - Function names can be all lowercase or all uppercase.
-  - Pi is automatically detected when entered as a variable (i.e. 'PI' or 'pi').
+  - Pi is recognized automatically when entered as a variable.
+	i.e. 
+	`sin(2*'pi'*5) or sin(2*'PI'*5)`
 
 ## Limitations:
   - Supported operators: +, -, *, /, %, ^
