@@ -53,7 +53,7 @@ Yard Algorithm.
 	inter.set_variable_table(varTable);
 	```
 
-!! In variable tables, variable names must NOT have ' characters. ' are used only in the input expression in order to mark variables.
+**!! In variable tables, variable names must _NOT_ have ' characters. ' are used only in the input expression in order to mark variables.**
 
 3. Call `init()` to initialize the interpreter.
 
