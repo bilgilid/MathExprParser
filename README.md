@@ -8,33 +8,33 @@ Yard Algorithm.
 Copy and paste `math_expr_parser.h` and `math_expr_parser.cpp` files to your project folder. And then include the header file.
 
 ### A. Without variables
-  - Have the mathematical expression you want to solve stored in a string
+  1. Have the mathematical expression you want to solve stored in a string
     in infix notation
 
     e.g. `std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";`
 
-  - Pass the expression to the constructor and create the parser object
+  2. Pass the expression to the constructor and create the parser object
 
     e.g. `MathExprParser mep(expr);`
 
-  - Call `calculate()` to parse and calculate the expression and save it in
+  3. Call `calculate()` to parse and calculate the expression and save it in
     a double.
 
     e.g. `double result = mep.calculate();`
 
 ### B. With variables
-  - Have the mathematical expression you want to solve stored in a string 
+  1. Have the mathematical expression you want to solve stored in a string 
     in infix notation. Use ' character before and after variable names to
     mark variables.
 
     e.g. `std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";`
          x and y are variables.
 
-  - Pass the expression to the constructor and create the parser object
+  2. Pass the expression to the constructor and create the parser object
 
     e.g. `MathExprParser mep(expr);`
 
-  - Create Var objects for each variable in the input expression and
+  3. Create Var objects for each variable in the input expression and
     store all Var objects in a vector
 
     e.g. 
@@ -49,7 +49,7 @@ Copy and paste `math_expr_parser.h` and `math_expr_parser.cpp` files to your pro
     **!!** In VAR objects, variable names must **NOT** have ' characters. ' are
        used only in the input expression in order to mark variables.
 
-  - Call `calculate()` and pass the vector of Vars to parse and calculate 
+  4. Call `calculate()` and pass the vector of Vars to parse and calculate 
     the expression and save it in a double.
 
     e.g. `double result = mep.calculate(vars);`
