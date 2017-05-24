@@ -12,12 +12,11 @@ Yard Algorithm.
 
 2. Create a MathInterpreter object and call set_input_expr() to set the input expression by passing the expression to it.
 	
-	e.g. 	
-
-		```
-		MathInterpreter inter;
-		inter.set_input_expr(expr);
-		```
+	e.g.
+	```
+	MathInterpreter inter; 
+	inter.set_input_expr(expr);
+	```
 
 3. Call calculate() to calculate the expression and save it in a double.
 		   
