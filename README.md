@@ -8,19 +8,26 @@ Yard Algorithm.
 ### A. Without variables
 1. Have the mathematical expression you want to solve stored in a string in infix notation
 		  
-	e.g. std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";
+	e.g. 
+	`std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";`
 
 2. Create a MathInterpreter object and call set_input_expr() to set the input expression by passing the expression to it.
 		
-	e.g. MathInterpreter inter; inter.set_input_expr(expr);
+	e.g. 
+	```
+	MathInterpreter inter; 
+	inter.set_input_expr(expr);
+	```
 
 3. Call init() to initialize the interpreter.
 
-	e.g. inter.init();
+	e.g. 
+	`inter.init();`
 
 4. Call calculate() to calculate the expression and save it in a double.
 		   
-	e.g. double result = inter.calculate();
+	e.g. 
+	`double result = inter.calculate();`
 
 ### B. With variables
 1. Have the mathematical expression you want to solve stored in a string in infix notation. Use ' character before and after variable names to mark variables.
