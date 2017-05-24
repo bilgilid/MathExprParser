@@ -70,7 +70,7 @@ int main() {
 
 	*/
 
-	std::string expr3 = "1.56 + sin(rad('thetai')) * log(sqrt('len'))";
+	std::string expr3 = "1.56 + sin(rad('theta')) * log(sqrt('len'))";
 
 	try {
 		MathInterpreter inter;
