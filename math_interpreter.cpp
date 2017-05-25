@@ -273,13 +273,8 @@ double MathInterpreter::calculate(const vector_double& variables) {
 
 	double result;
 
-	try {
-		std::string rpnWithVariablesAssigned = m_assign_values(variables);
-		result = m_calc_rpn(rpnWithVariablesAssigned);
-	}
-	catch(const std::exception& e) {
-		throw;
-	}
+	std::string rpnWithVariablesAssigned = m_assign_values(variables);
+	result = m_calc_rpn(rpnWithVariablesAssigned);
 	
 	return result;
 
