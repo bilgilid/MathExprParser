@@ -18,12 +18,15 @@ void MathInterpreter::set_variable_table(const vector_string& variables) {
 	the variable table are known to the interpreter. Must be called after
 	set_input_expr() and before init() to set the variable table.
 */
+	vector_string variableTable;
 
 	for(auto& var: variables) {
-			if(!m_variableExists(var)) throw UNKNOWN_VARIABLE(var);
-		}
+		std::string varNameInQuotes = "\'" + var + "\'";
+		if(!m_variableExists(varNameInQuotes)) throw UNKNOWN_VARIABLE(var);
+		variableTable.push_back(varNameInQuotes);
+	}
 
-	m_variableTable = variables;
+	m_variableTable = variableTable;
 
 }
 
@@ -114,20 +117,21 @@ void MathInterpreter::m_make_rpn() {
 		}
 		else if(*it == '\'') {
 			// ' is the variable identifier character.
-			it++; // skip the left ' character
 
 			std::string variable;
+
+			variable.push_back(*it++);
 
 			while(it != inputExprNoWS.cend() && *it != '\'') {
 				variable.push_back(*it++);
 			}
 
-			it++; // skip the right ' character
+			variable.push_back(*it++);
 
 			// check for PI
-			if(variable == "PI" || variable == "pi")
+			if(variable == "'PI'" || variable == "'pi'")
 				variable = "3.14159265358979323846";
-
+			
 			outputQueue.push(variable);
 		}
 		else {
@@ -242,10 +246,9 @@ std::string MathInterpreter::m_assign_values(const vector_double& vals) const {
 */
 
 	std::string rpnWithValuesAssigned = m_rpn;
-	
+
 	for(size_t i = 0; i < vals.size(); i++) {
 		std::string variableName = m_variableTable[i];
-
 		std::string variableValue = std::to_string(vals[i]);
 		size_t variableSize = variableName.size();
 
@@ -256,7 +259,7 @@ std::string MathInterpreter::m_assign_values(const vector_double& vals) const {
 			rpnWithValuesAssigned.replace(pos, variableSize, variableValue);
 		}
 	}
-	
+
 	return rpnWithValuesAssigned;
 
 }
@@ -397,9 +400,7 @@ bool MathInterpreter::m_variableExists(const std::string& varName) const {
 	Checks if the varible varName exists in the input expression.
 */
 
-	std::string varNameInQuotes = "\'" + varName + "\'";
-
-	if(m_inputExpr.find(varNameInQuotes) == std::string::npos)
+	if(m_inputExpr.find(varName) == std::string::npos)
 		return false;
 		
 	return true;
