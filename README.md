@@ -3,7 +3,7 @@ Mathematical expression interpreter for real-valued input.
 Works only with real numbers and returns real numbers. Uses the Shunting
 Yard Algorithm.
 
-## Steps for usage:
+## How to use:
 
 ### A. Without variables
 1. Have the mathematical expression you want to solve stored in a string in infix notation
@@ -33,7 +33,7 @@ Yard Algorithm.
 1. Have the mathematical expression you want to solve stored in a string in infix notation. Use ' character before and after variable names to mark variables.
 
 	e.g. 
-	`std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')"; x and y are variables.`
+	`std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')"; //x and y are variables.`
 		
 2. Create a `MathInterpreter` object and call `set_input_expr()` to set the input expression by passing the expression to it.
 
@@ -43,41 +43,38 @@ Yard Algorithm.
 	inter.set_input_expr(expr);
 	```
 
-3. Create a vector of strings and store variable names in it. Then set this vector as variable table, using `set_variable_table()`.
+3. Use register_var() to register all variables one-by-one.
 
 	e.g. 
 	```
-	vector_string varTable; 
-	varTable.push_back("x"); 
-	varTable.push_back("y"); 
-	inter.set_variable_table(varTable);
+	inter.register_var("x");
+	inter.register_var("y");
 	```
 
-**!! In variable tables, variable names must _NOT_ have ' characters. ' are used only in the input expression in order to mark variables.**
+**!!  While registering variables, variable names must NOT have ' characters. ' are used only in the input expression to mark variables.**
 
 3. Call `init()` to initialize the interpreter.
 
 	e.g. 
 	`inter.init();`
 
-4. Create a vector of doubles and store the values of variables in the order given in the variable table.
+4. Use set_value() to set values for each registered variable.
 
 	e.g. 
 	```
-	vector_double varValues; 
-	varValues.push_back(68); // first x 
-	varValues.push_back(96); // then y
+	inter.set_value("x", 12.75);
+	inter.set_value("y", 3.12);
 	```
 
-5. Call `calculate()` and pass the vector of values to calculate the expression and save it in a double.
+5. Call calculate() to calculate the expression and save it in a double.
 
 	e.g. 
-	`double result = inter.calculate(varValues);`
+	`double result = inter.calculate();`
 
 ## Notes:
   - Function names can be all lowercase or all uppercase.
   - Pi is recognized automatically when entered as a variable.
-	i.e. 
+	e.g. 
 	`sin(2*'pi'*5) or sin(2*'PI'*5)`
 
 ## Limitations:
