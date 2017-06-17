@@ -43,7 +43,7 @@ Yard Algorithm.
 	inter.set_input_expr(expr);
 	```
 
-3. Use register_var() to register all variables one-by-one.
+3. Use `register_var()` to register all variables one-by-one.
 
 	e.g. 
 	```
@@ -58,7 +58,7 @@ Yard Algorithm.
 	e.g. 
 	`inter.init();`
 
-4. Use set_value() to set values for each registered variable.
+4. Use `set_value()` to set values for each registered variable.
 
 	e.g. 
 	```
@@ -66,7 +66,7 @@ Yard Algorithm.
 	inter.set_value("y", 3.12);
 	```
 
-5. Call calculate() to calculate the expression and save it in a double.
+5. Call `calculate()` to calculate the expression and save it in a double.
 
 	e.g. 
 	`double result = inter.calculate();`
