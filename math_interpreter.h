@@ -93,7 +93,7 @@ class MathInterpreter {
 	Works only with real numbers and returns real numbers. Uses the Shunting
 	Yard Algorithm.
 
-	Steps for usage:
+	How to use:
 
 	A. Without variables
 		1. Have the mathematical expression you want to solve stored in a 
@@ -122,7 +122,7 @@ class MathInterpreter {
 		   names to mark variables.
 
 			e.g. std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";
-				 x and y are variables.
+				 //x and y are variables.
 		
 		2. Create a MathInterpreter object and call set_input_expr() to set the
 		   input expression by passing the expression to it.
@@ -148,10 +148,10 @@ class MathInterpreter {
 			e.g. inter.set_value("x", 12.75);
 				 inter.set_value("y", 3.12);
 
-		5. Call calculate() and pass the vector of values to calculate the 
-		   expression and save it in a double.
+		5. Call calculate() to calculate the expression and save it in a 
+		   double.
 
-			e.g. double result = inter.calculate(varValues);
+			e.g. double result = inter.calculate();
 
 
 	Notes:
