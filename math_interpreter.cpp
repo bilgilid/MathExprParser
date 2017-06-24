@@ -8,6 +8,10 @@ void MathInterpreter::set_input_expr(const std::string& input) {
 */
 
 	m_inputExpr = input;
+
+	m_varNames.clear();
+	m_varValues.clear();
+
 	m_make_rpn();
 
 }
