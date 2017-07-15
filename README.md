@@ -30,7 +30,7 @@ Yard Algorithm.
 	`double result = inter.calculate();`
 
 ### B. With variables
-1. Have the mathematical expression you want to solve stored in a string in infix notation. Use ' character before and after variable names to mark variables.
+1. Have the mathematical expression you want to solve stored in a string in infix notation. Use apostrophes before and after variable names to mark variables.
 
 	e.g. 
 	`std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')"; //x and y are variables.`
@@ -51,7 +51,7 @@ Yard Algorithm.
 	inter.register_var("y");
 	```
 
-**!!  While registering variables, variable names must NOT have ' characters. ' are used only in the input expression to mark variables.**
+**!!  While registering variables, variable names must NOT have apostrophes. Apostrophes are used only in the input expression to mark variables.**
 
 3. Call `init()` to initialize the interpreter.
 
