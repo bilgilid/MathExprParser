@@ -121,7 +121,7 @@ class MathInterpreter {
 
 	B. With variables
 		1. Have the mathematical expression you want to solve stored in a 
-		   string in infix notation. Use apostrophe before and after variable 
+		   string in infix notation. Use apostrophes before and after variable 
 		   names to mark variables.
 
 			e.g. std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";
