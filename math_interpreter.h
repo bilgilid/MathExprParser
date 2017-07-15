@@ -5,7 +5,7 @@ Author:         Deniz Bilgili
 				Department of Mechanical Engineering
 Date published: 05.2017
 
-This code is shared publicly, under MIT License. To see the license, please 
+This code is shared publicly, under the MIT License. To see the license, please 
 refer to the LICENSE.txt file.
 
 Please do not delete this section.
@@ -14,7 +14,10 @@ Please do not delete this section.
 
 #ifndef MATH_INTERPRETER_H
 #define MATH_INTERPRETER_H
+
+#ifndef M_PI
 #define M_PI 3.14159265358979323846  /* pi */
+#endif // !M_PI
 
 #include <string>
 #include <stack>
@@ -118,7 +121,7 @@ class MathInterpreter {
 
 	B. With variables
 		1. Have the mathematical expression you want to solve stored in a 
-		   string in infix notation. Use ' character before and after variable 
+		   string in infix notation. Use apostrophe before and after variable 
 		   names to mark variables.
 
 			e.g. std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";
@@ -135,9 +138,9 @@ class MathInterpreter {
 			e.g. inter.register_var("x");
 				 inter.register_var("y");
 
-			!!  While registering variables, variable names must NOT have ' 
-				characters. ' are used only in the input expression to mark 
-				variables.
+			!!  While registering variables, variable names must NOT have 
+				apostrophes. Apostrophes are used only in the input expression 
+				to mark variables.
 
 		3. Call init() to initialize the interpreter.
 

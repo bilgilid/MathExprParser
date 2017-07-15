@@ -1,3 +1,16 @@
+/*
+Program:        Math Expression Parser v1.0.
+Author:         Deniz Bilgili
+Technical University of Istanbul,
+Department of Mechanical Engineering
+Date published: 05.2017
+
+This code is shared publicly, under the MIT License. To see the license, please
+refer to the LICENSE.txt file.
+
+Please do not delete this section.
+*/
+
 #include "math_interpreter.h"
 
 void MathInterpreter::set_input_expr(const std::string& input) {
@@ -134,9 +147,14 @@ void MathInterpreter::m_make_rpn() {
 
 			it++; // skip the left '
 
-			while(it != inputExprNoWS.cend() && *it != '\'') {
+			while(it != inputExprNoWS.cend() && *it != '\'')
 				variable.push_back(*it++);
-			}
+
+			// if the iterator it is equal to the iterator to the input 
+			// expression's end, it means a right apostrophe is missing. 
+			// Throw syntax error if the iterator it is equal to the cend()
+			// iterator.
+			if(it == inputExprNoWS.cend()) throw INPUT_EXPR_SYNTAX_ERROR();
 
 			it++; // skip the right '
 
