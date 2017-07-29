@@ -11,18 +11,13 @@ Yard Algorithm.
 	e.g. 
 	`std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";`
 
-2. Create a `MathInterpreter` object and call `set_input_expr()` to set the input expression by passing the expression to it.
+2. Create a `MathInterpreter` object and call `init_with_expr()` initialize the interpreter with the given input expression.
 		
 	e.g. 
 	```
 	MathInterpreter inter; 
-	inter.set_input_expr(expr);
+	inter.init_with_expr(expr);
 	```
-
-3. Call `init()` to initialize the interpreter.
-
-	e.g. 
-	`inter.init();`
 
 4. Call `calculate()` to calculate the expression and save it in a double.
 		   
@@ -35,28 +30,13 @@ Yard Algorithm.
 	e.g. 
 	`std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')"; //x and y are variables.`
 		
-2. Create a `MathInterpreter` object and call `set_input_expr()` to set the input expression by passing the expression to it.
+2. Create a `MathInterpreter` object and call `init_with_expr()` initialize the interpreter with the given input expression.
 
 	e.g. 
 	```
 	MathInterpreter inter; 
-	inter.set_input_expr(expr);
+	inter.init_with_expr(expr);
 	```
-
-3. Use `register_var()` to register all variables one-by-one.
-
-	e.g. 
-	```
-	inter.register_var("x");
-	inter.register_var("y");
-	```
-
-**!!  While registering variables, variable names must NOT have apostrophes. Apostrophes are used only in the input expression to mark variables.**
-
-3. Call `init()` to initialize the interpreter.
-
-	e.g. 
-	`inter.init();`
 
 4. Use `set_value()` to set values for each registered variable.
 
