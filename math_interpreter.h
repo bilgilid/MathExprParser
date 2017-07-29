@@ -28,6 +28,12 @@ Please do not delete this section.
 #include <exception>
 
 
+struct Variable {
+	std::string name;
+	double value = 1.0;
+};
+
+typedef std::vector<Variable> vector_Variable;
 typedef std::vector<std::string> vector_string;
 typedef std::vector<double> vector_double;
 
@@ -100,19 +106,15 @@ class MathInterpreter {
 
 	A. Without variables
 		1. Have the mathematical expression you want to solve stored in a 
-		   string in infix notation
+		   string in infix notation.
 		  
 			e.g. std::string expr = "-12.4 + exp(sin(rad(68))) * log10(96)";
 
-		2. Create a MathInterpreter object and call set_input_expr() to set the
-		   input expression by passing the expression to it.
+		2. Create a MathInterpreter object and call init_with_expr() to
+		   initialize the interpreter with the given input expression.
 		
 			e.g. MathInterpreter inter;
-				 inter.set_input_expr(expr);
-
-		3. Call init() to initialize the interpreter.
-
-			e.g. inter.init();
+				 inter.init_with_expr(expr);
 
 		4. Call calculate() to calculate the expression and save it in a 
 		   double.
@@ -127,26 +129,13 @@ class MathInterpreter {
 			e.g. std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";
 				 //x and y are variables.
 		
-		2. Create a MathInterpreter object and call set_input_expr() to set the
-		   input expression by passing the expression to it.
+		2. Create a MathInterpreter object and call init_with_expr() to
+		initialize the interpreter with the given input expression.
 
 			e.g. MathInterpreter inter;
-				 inter.set_input_expr(expr);
+			inter.init_with_expr(expr);
 
-		3. Use register_var() to register all variables one-by-one.
-
-			e.g. inter.register_var("x");
-				 inter.register_var("y");
-
-			!!  While registering variables, variable names must NOT have 
-				apostrophes. Apostrophes are used only in the input expression 
-				to mark variables.
-
-		3. Call init() to initialize the interpreter.
-
-			e.g. inter.init();
-
-		4. Use set_value() to set values for each registered variable.
+		4. Use set_value() to set values for each variable.
 
 			e.g. inter.set_value("x", 12.75);
 				 inter.set_value("y", 3.12);
@@ -178,10 +167,8 @@ public:
 
 	double calculate();
 
-	void set_input_expr(const std::string& input);
-	void register_var(const std::string& varName);
+	void init_with_expr(const std::string& input);
 	void set_value(const std::string& varName, const double& varValue);
-	void init();
 
 	virtual ~MathInterpreter() = default;
 
@@ -189,9 +176,8 @@ private:
 	std::string m_inputExpr;
 	vector_string m_rpn;
 	std::string m_calcMap;
-	
-	vector_string m_varNames;
-	vector_string m_varValues;
+
+	vector_Variable m_vars;
 
 	bool m_isOperator(const std::string::const_iterator& it,
 		const std::string::const_iterator& itBegin) const;
@@ -214,8 +200,11 @@ private:
 
 	void m_make_rpn();
 	void m_make_calc_map();
+	void m_init();
 
 	double m_calc_rpn() const;
+
+	std::string m_clear_whitespaces(const std::string& str) const;
 
 };
 

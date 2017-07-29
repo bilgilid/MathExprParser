@@ -1,8 +1,8 @@
 /*
 Program:        Math Expression Parser v1.0.
 Author:         Deniz Bilgili
-Technical University of Istanbul,
-Department of Mechanical Engineering
+				Technical University of Istanbul,
+				Department of Mechanical Engineering
 Date published: 05.2017
 
 This code is shared publicly, under the MIT License. To see the license, please
@@ -13,57 +13,46 @@ Please do not delete this section.
 
 #include "math_interpreter.h"
 
-void MathInterpreter::set_input_expr(const std::string& input) {
+void MathInterpreter::init_with_expr(const std::string& input) {
 /*
-	Sets the input expression which is in infix notation. Generates the
-	reverse polish notation (RPN) expression from the input expression.
-	Must be called immediately after the MathInterpreter object creation.
+	Initializes the interpreter with the given input expression.
 */
 
 	m_inputExpr = input;
-
-	m_varNames.clear();
-	m_varValues.clear();
-
-	m_make_rpn();
-
-}
-
-void MathInterpreter::register_var(const std::string& varName) {
-/*
-	Saves varName in m_varNames to make varName a known variable. Only the 
-	variables stored in m_varNames are known to the interpreter. Must be called 
-	after set_input_expr() and before init() to make the variable known.
-*/
-	std::string varNameInQuotes = "\'" + varName + "\'";
-
-	if(!m_variableExists(varNameInQuotes)) throw UNKNOWN_VARIABLE(varName);
-
-	m_varNames.push_back(varName);
+	m_init();	
 
 }
 
 void MathInterpreter::set_value(const std::string& varName, 
 	const double& varValue) {
+/*
+	Sets the given numerical value to the variable with the given name. Throws
+	if the variable is not found.
+*/
 
-	size_t varIndex;
+	bool isFound = false;
 
-	for(size_t i = 0; i < m_varNames.size(); i++) {
-		if(m_varNames[i] == varName) varIndex = i;
+	for(auto& v: m_vars) {
+		if(v.name == varName) {
+			v.value = varValue;
+			isFound = true;
+		}
 	}
 
-	m_varValues[varIndex] = std::to_string(varValue);
+	if(!isFound) throw UNKNOWN_VARIABLE(varName);
 
 }
 
-void MathInterpreter::init() {
+void MathInterpreter::m_init() {
 /*
-	Initializes the interpreter. Must be called before calling calculate().
+	Clears previously set variables. Uses the input expression to generate the
+	RPN. Uses the generated RPN to generate the calculation map.
 */
 
-	m_make_calc_map();
+	m_vars.clear();
 
-	m_varValues = vector_string(m_varNames.size(), "0.0");
+	m_make_rpn();
+	m_make_calc_map();
 
 }
 
@@ -79,12 +68,7 @@ void MathInterpreter::m_make_rpn() {
 	std::queue<std::string> outputQueue;
 
 	// clear whitespaces from the input expression
-	std::istringstream iss(m_inputExpr);
-	std::string inputExprNoWS;
-	std::string token;
-
-	while(iss >> token) inputExprNoWS.append(token);
-	//
+	std::string inputExprNoWS = m_clear_whitespaces(m_inputExpr);
 
 	auto it = inputExprNoWS.cbegin();
 	auto itBegin = inputExprNoWS.cbegin();
@@ -143,12 +127,12 @@ void MathInterpreter::m_make_rpn() {
 		else if(*it == '\'') {
 			// ' is the variable identifier character.
 
-			std::string variable;
+			it++; // skip the left apostrophe
 
-			it++; // skip the left '
+			std::string variableName;
 
 			while(it != inputExprNoWS.cend() && *it != '\'')
-				variable.push_back(*it++);
+				variableName.push_back(*it++);
 
 			// if the iterator it is equal to the iterator to the input 
 			// expression's end, it means a right apostrophe is missing. 
@@ -156,13 +140,18 @@ void MathInterpreter::m_make_rpn() {
 			// iterator.
 			if(it == inputExprNoWS.cend()) throw INPUT_EXPR_SYNTAX_ERROR();
 
-			it++; // skip the right '
+			it++; // skip the right apostrophe
 
-			// check for PI
-			if(variable == "PI" || variable == "pi")
-				variable = "3.14159265358979323846";
+			outputQueue.push(variableName);
+
+			// create Variable object and save it
+			Variable var;
+			var.name = variableName;
+
+			if(variableName == "PI" || variableName == "pi") var.value = M_PI;
+				
+			m_vars.push_back(var);
 			
-			outputQueue.push(variable);
 		}
 		else {
 			std::string parsedFunction;
@@ -199,7 +188,7 @@ void MathInterpreter::m_make_calc_map() {
 	interpreter.
 
 	This function modifies the RPN and stores functions with their enum values,
-	and variables with their indexes in m_varNames. This allows for fast
+	and variables with their indexes in m_vars. This allows for fast
 	interpretation of functions and variables.
 */
 
@@ -269,8 +258,7 @@ double MathInterpreter::m_calc_rpn() const {
 			case 'V':
 			{
 				int varIndex = std::stoi(m_rpn[i]);
-				double varValue = std::stod(m_varValues[varIndex]);
-				numberStack.push(varValue);
+				numberStack.push(m_vars[varIndex].value);
 			}
 				break;
 			default:
@@ -384,7 +372,7 @@ bool MathInterpreter::m_isNumber(const std::string& token) const {
 	try {
 		std::stod(token);
 	}
-	catch(const std::invalid_argument& e) {
+	catch(const std::invalid_argument&) {
 		return false;
 	}
 
@@ -400,8 +388,8 @@ int MathInterpreter::m_isVariable(const std::string& token) const {
 	variable.
 */
 
-	for(size_t i = 0; i < m_varNames.size(); i++) {
-		if(m_varNames[i] == token) return i+1;
+	for(size_t i = 0; i < m_vars.size(); i++) {
+		if(m_vars[i].name == token) return i+1;
 	}
 
 	return 0;
@@ -531,5 +519,17 @@ double MathInterpreter::m_calc_function(double val, FUNCTION func) const {
 		default:
 			return 0.0;
 	}
+
+}
+
+std::string MathInterpreter::m_clear_whitespaces(const std::string& str) const {
+
+	std::istringstream iss(str);
+	std::string strNoWS;
+	std::string token;
+
+	while(iss >> token) strNoWS.append(token);
+
+	return strNoWS;
 
 }

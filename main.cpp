@@ -1,23 +1,24 @@
 #include <iostream>
+#include <exception>
 #include <time.h>
 #include "math_interpreter.h"
+
+using namespace std;
 
 
 int main() {
 
 	/*
-
 	Example 1:  Expression with no variables.
 	Expression: 1.56 + sin(rad(37.81)) * log(sqrt(75))
-	Result    : 2.88341... 
+	Result    : 2.88341...
 	*/
 
 	std::string expr1 = "1.56 + sin(rad(37.81)) * log(sqrt(75))";
 
 	try {
 		MathInterpreter inter;
-		inter.set_input_expr(expr1);
-		inter.init();
+		inter.init_with_expr(expr1);
 
 		double result1 = inter.calculate();
 
@@ -39,15 +40,10 @@ int main() {
 
 	try {
 		MathInterpreter inter;
-		inter.set_input_expr(expr2);
+		inter.init_with_expr(expr2);
 
 		std::string v1 = "theta";
 		std::string v2 = "len";
-
-		inter.register_var(v1);
-		inter.register_var(v2);
-
-		inter.init();
 
 		inter.set_value(v1, 37.81);
 		inter.set_value(v2, 75);
@@ -63,7 +59,7 @@ int main() {
 	/*
 	Example 3:  Expression with variables having multiple values.
 	Expression: 1.56 + sin(rad('theta')) * log(sqrt('len'))
-				for theta between 0 and 90 degrees and len = 75
+	for theta between 0 and 90 degrees and len = 75
 	Result    : Multiple values
 	*/
 
@@ -73,38 +69,33 @@ int main() {
 		clock_t t = clock();
 
 		MathInterpreter inter;
-		inter.set_input_expr(expr3);
+		inter.init_with_expr(expr3);
 
 		std::string v1 = "theta";
 		std::string v2 = "len";
 
-		inter.register_var(v1);
-		inter.register_var(v2);
-
-		inter.init();
-
 		int numElems = 100001;
 
-		std::cout << "Beginning to calculate " << numElems << " elements." 
+		std::cout << "Beginning to calculate " << numElems << " elements."
 			<< std::endl;
 
 		// 10000 elements
 		for(size_t i = 0; i < numElems; i++) {
 			inter.set_value(v1, i*0.009);
 			inter.set_value(v2, 75);
-			
+
 			double result3 = inter.calculate();
 		}
 
 		t = clock() - t;
-		std::cout << "Calculated " << numElems << " elements in " << t 
+		std::cout << "Calculated " << numElems << " elements in " << t
 			<< " milliseconds." << std::endl;
 	}
 	catch(const std::exception& e) {
 		std::cout << e.what() << std::endl;
 	}
-
 	
+
 	getchar();
 	return 0;
 }
