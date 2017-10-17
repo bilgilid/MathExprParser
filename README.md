@@ -54,7 +54,7 @@ Yard Algorithm.
 ## Notes:
   - Function names can be all lowercase or all uppercase.
   - Pi is recognized automatically when entered as a variable.
-    e.g. `sin(2*$pi$*5) or sin(2*$PI$*5)`
+	e.g. `sin(2*$pi$*5) or sin(2*$PI$*5)`
 
 ## Limitations:
   - Supported operators: +, -, *, /, %, ^
