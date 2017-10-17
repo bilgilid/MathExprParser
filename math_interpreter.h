@@ -102,7 +102,7 @@ class MathInterpreter {
 			e.g. MathInterpreter inter;
 				 inter.init_with_expr(expr);
 
-		4. Call calculate() to calculate the expression and save it in a 
+		3. Call calculate() to calculate the expression and save it in a 
 		   double.
 		   
 			e.g. double result = inter.calculate();
@@ -121,12 +121,12 @@ class MathInterpreter {
 			e.g. MathInterpreter inter;
 			inter.init_with_expr(expr);
 
-		4. Use set_value() to set values for each variable.
+		3. Use set_value() to set values for each variable.
 
 			e.g. inter.set_value("x", 12.75);
 				 inter.set_value("y", 3.12);
 
-		5. Call calculate() to calculate the expression and save it in a 
+		4. Call calculate() to calculate the expression and save it in a 
 		   double.
 
 			e.g. double result = inter.calculate();

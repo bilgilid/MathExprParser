@@ -19,16 +19,16 @@ Yard Algorithm.
 	inter.init_with_expr(expr);
 	```
 
-4. Call `calculate()` to calculate the expression and save it in a double.
+3. Call `calculate()` to calculate the expression and save it in a double.
 		   
 	e.g. 
 	`double result = inter.calculate();`
 
 ### B. With variables
-1. Have the mathematical expression you want to solve stored in a string in infix notation. Use apostrophes before and after variable names to mark variables.
+1. Have the mathematical expression you want to solve stored in a string in infix notation. Use dollar sign($) before and after variable names to mark variables.
 
 	e.g. 
-	`std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')"; //x and y are variables.`
+	`std::string expr = "-12.4 + exp(sin(rad($x$))) * log10($y$)"; //x and y are variables.`
 		
 2. Create a `MathInterpreter` object and call `init_with_expr()` initialize the interpreter with the given input expression.
 
@@ -54,8 +54,7 @@ Yard Algorithm.
 ## Notes:
   - Function names can be all lowercase or all uppercase.
   - Pi is recognized automatically when entered as a variable.
-	e.g. 
-	`sin(2*'pi'*5) or sin(2*'PI'*5)`
+	  e.g. sin(2*$pi$*5) or sin(2*$PI$*5)
 
 ## Limitations:
   - Supported operators: +, -, *, /, %, ^
