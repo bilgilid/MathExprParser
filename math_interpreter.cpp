@@ -14,251 +14,172 @@ Please do not delete this section.
 #include "math_interpreter.h"
 
 void MathInterpreter::init_with_expr(const std::string& input) {
+
 /*
 	Initializes the interpreter with the given input expression.
 */
 
 	m_inputExpr = input;
-	m_init();	
+
+	m_make_input_bits();
+	m_make_rpn();
 
 }
 
 void MathInterpreter::set_value(const std::string& varName, 
 	const double& varValue) {
+
 /*
 	Sets the given numerical value to the variable with the given name. Throws
 	if the variable is not found.
 */
 
-	bool isFound = false;
+	int varIndex = m_isVariable(varName) - 1;
 
-	for(auto& v: m_vars) {
-		if(v.name == varName) {
-			v.value = varValue;
-			isFound = true;
-		}
-	}
+	if(varIndex < 0) throw UNKNOWN_VARIABLE(varName);
 
-	if(!isFound) throw UNKNOWN_VARIABLE(varName);
+	m_varTable[varIndex].second = varValue;
 
 }
 
-void MathInterpreter::m_init() {
+void MathInterpreter::m_make_input_bits() {
+
 /*
-	Clears previously set variables. Uses the input expression to generate the
-	RPN. Uses the generated RPN to generate the calculation map.
+	Generates input bits for the given input expression.
+
+	Consider the input expression "-1.7512  + sin($f$)"
+	When this expression is divided into input bits, the resulting bits are as
+	below:
+
+	-1.7512    +            sin         (               $f$         )
+	NUMBER     OPERATOR     FUNCTION    LPARENTHESIS    VARIABLE    RPARENTHESIS
+
+	This function identifies these bits and saves them in the m_inputBits 
+	vector. After the bits are created, conversion from the infix notation to
+	reverse polish (postfix) notation is done by only respecting the bit types
+	and not the bit values (strings).
 */
-
-	m_vars.clear();
-
-	m_make_rpn();
-	m_make_calc_map();
-
-}
-
-void MathInterpreter::m_make_rpn() {
-/*
-	Converts infix notation to reverse polish notation (RPN).
-*/
-
-	if(m_inputExpr.empty() || m_inputExpr == " ") throw BAD_INIT();
-
-	// necessary containers
-	std::stack<std::string> operatorStack;
-	std::queue<std::string> outputQueue;
 
 	// clear whitespaces from the input expression
 	std::string inputExprNoWS = m_clear_whitespaces(m_inputExpr);
 
+	if(inputExprNoWS.empty()) throw BAD_INIT();
+
 	auto it = inputExprNoWS.cbegin();
 	auto itBegin = inputExprNoWS.cbegin();
+	auto itEnd = inputExprNoWS.cend();
 
-	while(it != inputExprNoWS.cend()) {
-		if(m_isOperator(it, itBegin)) {
-			// pop all operators on the top of the operator stack with greater
-			// precedence than (or equal to) this operator and put them in the 
-			// output queue
-			// Note: Functions have higher precedence than all operators
-			while(
-				!operatorStack.empty() && 
-					(m_precedence(operatorStack.top()) >= m_precedence(*it))
-				) {
-				std::string op = operatorStack.top();
-				outputQueue.push(op);
-				operatorStack.pop();
-			}
+	while(it != itEnd) {
+		InputBit extractedBit;
 
-			// finally, push this operator to the operator stack
-			operatorStack.push(std::string(1, *it));
-			it++;
+		if(m_isNumber(it, itBegin, itEnd)) {
+			extractedBit = m_extract_number(it, itBegin, itEnd);
 		}
-		else if(*it == '(') {
-			operatorStack.push(std::string(1, *it));
-			it++;
+		else if(m_isOperator(it, itBegin, itEnd)) {
+			extractedBit = m_extract_operator(it, itBegin, itEnd);
 		}
-		else if(*it == ')') {
-			// pop all operators from the operator stack until the top element
-			// is a left parenthesis and put the popped operators in the output
-			// queue. Discard the right parenthesis
-			while(!operatorStack.empty() && operatorStack.top() != "(") {
-				std::string op = operatorStack.top();
-				outputQueue.push(op);
-				operatorStack.pop();
-			}
-
-			// finally, pop the left parenthesis from the operator stack and
-			// discard it
-			// !! check if the operator stack is empty. if it is, there's 
-			//	  a syntax error in the input expression.
-			if(operatorStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
-
-			operatorStack.pop();
-			it++;
+		else if(*it == '$') {
+			extractedBit = m_extract_variable(it, itBegin, itEnd);
 		}
-		else if(m_isNumber(it, itBegin)) {
-			std::string parsedNumber;
-
-			while(it != inputExprNoWS.cend() && m_isNumber(it, itBegin)) {
-				parsedNumber.push_back(*it++);
-			}
-
-			outputQueue.push(parsedNumber);
+		else if(*it == '(' || *it == ')') {
+			extractedBit = m_extract_parenthesis(it, itEnd);
 		}
-		else if(*it == '\'') {
-			// ' is the variable identifier character.
-
-			it++; // skip the left apostrophe
-
-			std::string variableName;
-
-			while(it != inputExprNoWS.cend() && *it != '\'')
-				variableName.push_back(*it++);
-
-			// if the iterator it is equal to the iterator to the input 
-			// expression's end, it means a right apostrophe is missing. 
-			// Throw syntax error if the iterator it is equal to the cend()
-			// iterator.
-			if(it == inputExprNoWS.cend()) throw INPUT_EXPR_SYNTAX_ERROR();
-
-			it++; // skip the right apostrophe
-
-			outputQueue.push(variableName);
-
-			// create Variable object and save it
-			Variable var;
-			var.name = variableName;
-
-			if(variableName == "PI" || variableName == "pi") var.value = M_PI;
-				
-			m_vars.push_back(var);
-			
+		else { // consider all the rest to be functions (known or unknown)
+			extractedBit = m_extract_function(it, itBegin, itEnd);
 		}
-		else {
-			std::string parsedFunction;
 
-			while(it != inputExprNoWS.cend() && *it != '(') {
-				parsedFunction.push_back(*it++);
-			}
+		m_inputBits.push_back(extractedBit);
+	}
 
-			operatorStack.push(parsedFunction);
+}
+
+void MathInterpreter::m_make_rpn() {
+
+/*
+	Converts infix notation to reverse polish notation (RPN) based on the input
+	bit types.
+
+	Once the conversion is done, checks and validates the resulting RPN to look
+	for errors.
+*/
+
+	for(const auto& bit: m_inputBits) {
+		switch(bit.second) {
+			case BitType::OPERATOR:
+				m_handle_operator(bit);
+				break;
+			case BitType::NUMBER:
+				m_outputQueue.push(bit);
+				break;
+			case BitType::VARIABLE:
+				m_handle_variable(bit);
+				break;
+			case BitType::FUNCTION:
+			case BitType::LPARENTHESIS:
+				m_operatorStack.push(bit);
+				break;
+			case BitType::RPARENTHESIS:
+				m_handle_rParenthesis(bit);
+				break;
+			default:
+				break;
 		}
+
 	}
 
 	// Pop all items from the operator stack and push them to the output queue
-	while(!operatorStack.empty()) {
-		std::string op = operatorStack.top();
-		outputQueue.push(op);
-		operatorStack.pop();
+	while(!m_operatorStack.empty()) {
+		auto topBit = m_operatorStack.top();
+		m_outputQueue.push(topBit);
+		m_operatorStack.pop();
 	}
 
 	m_rpn.clear();
 
-	while(!outputQueue.empty()) {
-		m_rpn.push_back(std::move(outputQueue.front()));
-		outputQueue.pop();
+	while(!m_outputQueue.empty()) {
+		m_rpn.push_back(m_outputQueue.front());
+		m_outputQueue.pop();
 	}
+
+	m_validate_rpn();
 	
 }
 
-void MathInterpreter::m_make_calc_map() {
-/*
-	Generates the calculation map. Calculation map marks numbers, operators,
-	functions and variables so that the RPN is not interpreted over and over
-	again in every calculation (e.g. in a loop). This is done to speed up the
-	interpreter.
+void MathInterpreter::m_validate_rpn() {
 
-	This function modifies the RPN and stores functions with their enum values,
-	and variables with their indexes in m_vars. This allows for fast
-	interpretation of functions and variables.
+/*
+	Checks and validates the RPN for errors. Looks for:
+		- Syntax errors in the input expression. (missing parentheses etc)
+		- Unknown expressions
 */
 
-	std::string calcMap;
+	// firstly, look for a left parenthesis in the RPN to catch missing
+	// right parentheses. If this failure mode is not checked before others,
+	// missing right parentheses will trigger other errors and be masked by them
+	bool unknownExprFound = false;
+	InputBit unknownExprBit {std::string(), BitType::FUNCTION};
 
-	for(auto& str: m_rpn) {
-		if(m_isNumber(str)) {
-			calcMap.push_back('N');
-		}
-		else if(m_isOperator(str)) {
-			calcMap.push_back('O');
-		}
-		else if(FUNCTION func = m_isFunction(str)) {
-			str = std::to_string(func);
-			calcMap.push_back('F');
-		}
-		else if(int i = m_isVariable(str)) {
-			str = std::to_string(i-1);
-			calcMap.push_back('V');
-		}
-		else {
-			throw INPUT_EXPR_SYNTAX_ERROR();
-		}
-	}
-
-	m_calcMap = calcMap;
-	
-}
-
-double MathInterpreter::m_calc_rpn() const {
-/*
-	Calculates the expression given in reverse polish notation, and returns the 
-	result as double.
-*/
-
-	std::stack<double> numberStack;
-
-	for(size_t i = 0; i < m_calcMap.size(); i++) {
-		switch(m_calcMap[i]) {
-			case 'N':
-				numberStack.push(std::stod(m_rpn[i]));
+	for(auto& bit: m_rpn) {
+		switch(bit.second) {
+			case BitType::LPARENTHESIS:
+				throw INPUT_EXPR_SYNTAX_ERROR();
 				break;
-			case 'O':
+			case BitType::VARIABLE:
 			{
-				double rVal = numberStack.top();
-				numberStack.pop();
-				double lVal = numberStack.top();
-				numberStack.pop();
-
-				char op = m_rpn[i][0];
-
-				double operatorCalcResult = m_calc_operator(lVal, rVal, op);
-				numberStack.push(operatorCalcResult);
+				auto varIndex = m_isVariable(bit.first);
+				bit.first = std::to_string(varIndex - 1);
 			}
 				break;
-			case 'F':
+			case BitType::FUNCTION:
 			{
-				FUNCTION func = (FUNCTION)std::stoi(m_rpn[i]);
+				auto funcType = m_isFunction(bit.first);
 
-				double val = numberStack.top();
-				numberStack.pop();
+				if(funcType == FUNCTION::NONE) {
+					unknownExprFound = true;
+					unknownExprBit.first = bit.first;
+				}
 
-				double functionCalcResult = m_calc_function(val, func);
-				numberStack.push(functionCalcResult);
-			}
-				break;
-			case 'V':
-			{
-				int varIndex = std::stoi(m_rpn[i]);
-				numberStack.push(m_vars[varIndex].value);
+				bit.first = std::to_string((int)funcType);
 			}
 				break;
 			default:
@@ -266,29 +187,70 @@ double MathInterpreter::m_calc_rpn() const {
 		}
 	}
 
-	return numberStack.top();
+	if(unknownExprFound) throw UNKNOWN_EXPRESSION(unknownExprBit.first);
 
 }
 
 double MathInterpreter::calculate() {
+
 /*
-	Calculates the RPN expression with given values or variables.
+	Calculates the expression given in reverse polish notation, and returns the 
+	result as double.
 */
 
-	double result;
+	for(const auto& bit: m_rpn) {
+		switch(bit.second) {
+			case BitType::NUMBER:
+				m_numberStack.push(std::stod(bit.first));
+				break;
+			case BitType::OPERATOR:
+			{
+				double rVal = m_numberStack.top();
+				m_numberStack.pop();
+				double lVal = m_numberStack.top();
+				m_numberStack.pop();
+				std::string opName = bit.first;
 
-	result = m_calc_rpn();
-	
-	return result;
+				double operatorCalcResult = m_calc_operator(lVal, rVal, opName);
+				m_numberStack.push(operatorCalcResult);
+			}
+				break;
+			case BitType::FUNCTION:
+			{
+				FUNCTION func = (FUNCTION)std::stoi(bit.first);
+
+				double val = m_numberStack.top();
+				m_numberStack.pop();
+
+				double functionCalcResult = m_calc_function(val, func);
+				m_numberStack.push(functionCalcResult);
+			}
+				break;
+			case BitType::VARIABLE:
+			{
+				int varIndex = std::stoi(bit.first);
+				m_numberStack.push(m_varTable[varIndex].second);
+			}
+				break;
+			default:
+				break;
+		}
+	}
+
+	return m_numberStack.top();
 
 }
 
-bool MathInterpreter::m_isOperator(const std::string::const_iterator& it, 
-	const std::string::const_iterator& itBegin) const {
+bool MathInterpreter::m_isOperator(const ConstIter& it, 
+	const ConstIter& itBegin, const ConstIter& itEnd) const noexcept {
+
 /*
 	it:      The string iterator iterating over the input expression.
-	itBegin: The iterator pointing at the end of the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
 */
+
+	if(it == itEnd) return false;
 
 	char token = *it;
 
@@ -301,7 +263,7 @@ bool MathInterpreter::m_isOperator(const std::string::const_iterator& it,
 			//	3. it comes after an operator, including "-"
 			if(it == itBegin) return false;
 			if(*(it-1) == '(') return false;
-			if(m_isOperator(it-1, itBegin)) return false;
+			if(m_isOperator(it-1, itBegin, itEnd)) return false;
 			return true;
 		case '*':
 		case '/':
@@ -313,26 +275,16 @@ bool MathInterpreter::m_isOperator(const std::string::const_iterator& it,
 
 }
 
-bool MathInterpreter::m_isOperator(const std::string& token) const {
+bool MathInterpreter::m_isNumber(const ConstIter& it,
+	const ConstIter& itBegin, const ConstIter& itEnd) const noexcept {
+
 /*
-	Checks if token, which is taken from the number stack, is an operator.
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
 */
 
-	if(token == "+") return true;
-	if(token == "-") return true;
-	if(token == "*") return true;
-	if(token == "/") return true;
-	if(token == "^") return true;
-	else return false;
-
-}
-
-bool MathInterpreter::m_isNumber(const std::string::const_iterator& it,
-	const std::string::const_iterator& itBegin) const {
-/*
-	it     : the string iterator iterating over the input expression.
-	itBegin: the iterator pointing at the end of the input expression.
-*/
+	if(it == itEnd) return false;
 
 	char token = *it;
 	
@@ -356,7 +308,7 @@ bool MathInterpreter::m_isNumber(const std::string::const_iterator& it,
 			//	3. it comes after an operator, including "-"
 			if(it == itBegin) return true;
 			if(*(it-1) == '(') return true;
-			if(m_isOperator(it-1, itBegin)) return true;
+			if(m_isOperator(it-1, itBegin, itEnd)) return true;
 			return false;
 		default:
 			return false;
@@ -364,51 +316,8 @@ bool MathInterpreter::m_isNumber(const std::string::const_iterator& it,
 
 }
 
-bool MathInterpreter::m_isNumber(const std::string& token) const {
-/*
-	Checks if token, which is taken from the number stack, is a number.
-*/
-
-	try {
-		std::stod(token);
-	}
-	catch(const std::invalid_argument&) {
-		return false;
-	}
-
-	return true;
-
-}
-
-int MathInterpreter::m_isVariable(const std::string& token) const {
-/*
-	Checks if the token taken from the input expression is a variable.
-
-	Returns found index + 1 so that the return value 0 means token is not a
-	variable.
-*/
-
-	for(size_t i = 0; i < m_vars.size(); i++) {
-		if(m_vars[i].name == token) return i+1;
-	}
-
-	return 0;
-
-}
-
-bool MathInterpreter::m_variableExists(const std::string& varName) const {
-/*
-	Checks if the varible varName exists in the input expression.
-*/
-
-	if(m_inputExpr.find(varName) == std::string::npos)
-		return false;
-		
-	return true;
-
-}
-
-FUNCTION MathInterpreter::m_isFunction(const std::string& token) const {
+MathInterpreter::FUNCTION MathInterpreter::m_isFunction(
+	const std::string& token) const noexcept {
 
 	if(token == "LOG" || token == "log") return FUNCTION::LOG;
 	if(token == "LOG10" || token == "log10") return FUNCTION::LOG10;
@@ -430,38 +339,39 @@ FUNCTION MathInterpreter::m_isFunction(const std::string& token) const {
 
 }
 
-int MathInterpreter::m_precedence(const char& op) const {
+size_t MathInterpreter::m_isVariable(const std::string& token) const noexcept {
 
-	switch(op) {
-		case '+':
-		case '-':
-			return 2;
-		case '*':
-		case '/':
-		case '%':
-			return 3;
-		case '^':
-			return 4;
-		default:
-			return 1;
+/*
+	Checks if the token taken from the input expression is a variable.
+
+	Returns found index + 1 so that the return value 0 means token is not a
+	variable.
+*/
+
+	for(size_t i = 0; i < m_varTable.size(); i++) {
+		if(token == m_varTable[i].first) return i+1;
 	}
+
+	return 0;
 
 }
 
-int MathInterpreter::m_precedence(const std::string& op) const {
+int MathInterpreter::m_precedence(const InputBit& operatorBit) const noexcept {
+
+	std::string op = operatorBit.first;
 
 	if(op == "+" || op == "-") return 2;
 	if(op == "*" || op == "/" || op == "%") return 3;
 	if(op == "^") return 4;
-	if(m_isFunction(op)) return 5;
+	if((int)m_isFunction(op)) return 5;
 	else return 1;
 
 }
 
-double MathInterpreter::m_calc_operator(double lVal, double rVal,
-	char op) const {
+double MathInterpreter::m_calc_operator(const double& lVal, const double& rVal,
+	const std::string& operatorName) const noexcept {
 
-	switch(op) {
+	switch(operatorName[0]) {
 		case '+':
 			return lVal + rVal;
 		case '-':
@@ -480,41 +390,42 @@ double MathInterpreter::m_calc_operator(double lVal, double rVal,
 
 }
 
-double MathInterpreter::m_calc_function(double val, FUNCTION func) const {
+double MathInterpreter::m_calc_function(const double& val, 
+	const FUNCTION& func) const noexcept {
 
 	switch(func) {
-		case NONE:
+		case FUNCTION::NONE:
 			return 0.0;
-		case LOG:
+		case FUNCTION::LOG:
 			return std::log(val);
-		case LOG10:
+		case FUNCTION::LOG10:
 			return std::log10(val);
-		case SIN:
+		case FUNCTION::SIN:
 			return std::sin(val);
-		case COS:
+		case FUNCTION::COS:
 			return std::cos(val);
-		case TAN:
+		case FUNCTION::TAN:
 			return std::tan(val);
-		case COT:
+		case FUNCTION::COT:
 			return 1/std::tan(val);
-		case ASIN:
+		case FUNCTION::ASIN:
 			return std::asin(val);
-		case ACOS:
+		case FUNCTION::ACOS:
 			return std::acos(val);
-		case ATAN:
+		case FUNCTION::ATAN:
 			return std::atan(val);
 		// case ATAN2: implement later
-		case ACOT:
+		case FUNCTION::ACOT:
 			return std::atan(1/val);
-		case DEG:
+		case FUNCTION::DEG:
 			return (val/(2*M_PI))*360;
-		case RAD:
+		case FUNCTION::RAD:
 			return (val/360)*2*M_PI;
-		case SQRT:
+		case FUNCTION::SQRT:
 			return std::sqrt(val);
-		case EXP:
+		case FUNCTION::EXP:
 			return std::exp(val);
-		case ABS:
+		case FUNCTION::ABS:
 			return std::abs(val);
 		default:
 			return 0.0;
@@ -532,4 +443,197 @@ std::string MathInterpreter::m_clear_whitespaces(const std::string& str) const {
 
 	return strNoWS;
 
+}
+
+MathInterpreter::InputBit MathInterpreter::m_extract_operator(ConstIter& it, 
+	const ConstIter& itBegin, const ConstIter& itEnd) const {
+
+/*
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
+*/
+
+	InputBit operatorBit {std::string(), BitType::OPERATOR};
+
+	while(m_isOperator(it, itBegin, itEnd)) {
+		operatorBit.first.push_back(*it);
+		it++;
+	}
+
+	return operatorBit;
+
+}
+
+MathInterpreter::InputBit MathInterpreter::m_extract_number(ConstIter& it,
+	const ConstIter& itBegin, const ConstIter& itEnd) const {
+
+/*
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
+*/
+
+	InputBit numberBit {std::string(), BitType::NUMBER};
+
+	while(m_isNumber(it, itBegin, itEnd)) {
+		numberBit.first.push_back(*it);
+		it++;
+	}
+
+	return numberBit;
+
+}
+
+MathInterpreter::InputBit MathInterpreter::m_extract_variable(ConstIter& it,
+	const ConstIter& itBegin, const ConstIter& itEnd) const {
+
+/*
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
+*/
+
+	InputBit variableBit {std::string(), BitType::VARIABLE};
+
+	if(it != itEnd) it++; // skip the left $ sign
+
+	while(it != itEnd && *it != '$') {
+		variableBit.first.push_back(*it);
+		it++;
+	}
+
+	if(it != itEnd) it++; // skip the right $ sign
+
+	return variableBit;
+
+}
+
+MathInterpreter::InputBit MathInterpreter::m_extract_function(ConstIter& it,
+	const ConstIter& itBegin, const ConstIter& itEnd) const {
+
+/*
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
+*/
+
+	InputBit functionBit {std::string(), BitType::FUNCTION};
+
+	while(it != itEnd && *it != '(') {
+		functionBit.first.push_back(*it);
+		it++;
+	}
+
+	return functionBit;
+
+}
+
+MathInterpreter::InputBit MathInterpreter::m_extract_parenthesis(ConstIter& it,
+	const ConstIter& itEnd) const noexcept {
+
+/*
+	it:      The string iterator iterating over the input expression.
+	itBegin: The iterator pointing at the beginning of the input expression.
+	itEnd:   The iterator pointing at the end of the input expression.
+*/
+
+	InputBit parenthesisBit {std::string(), BitType::LPARENTHESIS};
+
+	if(it != itEnd) {
+		if(*it == '(') {
+			parenthesisBit.first = std::string("(");
+		}
+		else if(*it == ')') {
+			parenthesisBit.first = std::string(")");
+			parenthesisBit.second = BitType::RPARENTHESIS;
+		}
+
+		it++;
+	}
+
+	return parenthesisBit;
+
+}
+
+void MathInterpreter::m_handle_operator(const InputBit& operatorBit) {
+
+/*
+	The actions to perform on the operator stack when an operator is encountered
+	in the input expression.
+*/
+
+	if(operatorBit.second == BitType::OPERATOR) {
+		// pop all operators on the top of the operator stack with greater
+		// precedence than (or equal to) this operator and put them in the 
+		// output queue
+		while(!m_operatorStack.empty()) {
+			auto topBitPrecedence = m_precedence(m_operatorStack.top());
+			auto operatorBitPrecedence = m_precedence(operatorBit);
+
+			if(topBitPrecedence < operatorBitPrecedence) break;
+
+			auto topBit = m_operatorStack.top();
+			m_outputQueue.push(topBit);
+			m_operatorStack.pop();
+		}
+
+		// finally, push this operator to the operator stack
+		m_operatorStack.push(operatorBit);
+	}
+
+}
+
+void MathInterpreter::m_handle_variable(const InputBit& variableBit) {
+
+/*
+	The actions to perform on the output queue when a variable is encountered
+	in the input expression.
+*/
+
+	if(variableBit.second == BitType::VARIABLE) {
+		if(variableBit.first == "PI" || variableBit.first == "pi") {
+			auto& variableToNumberBit = const_cast<InputBit&>(variableBit);
+
+			variableToNumberBit.first = std::to_string(M_PI);
+			variableToNumberBit.second = BitType::NUMBER;
+		}
+		else {
+			m_varTable.push_back(Variable {variableBit.first, 0.0});
+		}
+
+		m_outputQueue.push(std::move(variableBit));
+	}
+
+}
+
+void MathInterpreter::m_handle_rParenthesis(const InputBit& parenthesisBit) {
+
+/*
+	The actions to perform on the output queue and the operator stack when a
+	right parenthesis is encountered in the input expression.
+*/
+
+	if(parenthesisBit.second == BitType::RPARENTHESIS) {
+		// pop all operators from the operator stack until the top element
+		// is a left parenthesis and put the popped operators in the output
+		// queue. Discard the right parenthesis
+		while(!m_operatorStack.empty()) {
+			if(m_operatorStack.top().first == "(") break;
+
+			auto topBit = m_operatorStack.top();
+			m_outputQueue.push(topBit);
+			m_operatorStack.pop();
+		}
+
+		// finally, pop the left parenthesis from the operator stack and
+		// discard it
+		// !! check if the operator stack is empty. if it is, there's 
+		//	  a syntax error in the input expression due to unmatching
+		//    parentheses
+		if(m_operatorStack.empty()) throw INPUT_EXPR_SYNTAX_ERROR();
+
+		m_operatorStack.pop();
+	}
+	
 }

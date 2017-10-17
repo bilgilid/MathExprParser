@@ -11,7 +11,6 @@ refer to the LICENSE.txt file.
 Please do not delete this section.
 */
 
-
 #ifndef MATH_INTERPRETER_H
 #define MATH_INTERPRETER_H
 
@@ -25,39 +24,9 @@ Please do not delete this section.
 #include <sstream>
 #include <cmath>
 #include <vector>
+#include <utility>
 #include <exception>
 
-
-struct Variable {
-	std::string name;
-	double value = 1.0;
-};
-
-typedef std::vector<Variable> vector_Variable;
-typedef std::vector<std::string> vector_string;
-typedef std::vector<double> vector_double;
-
-enum FUNCTION {
-
-	NONE = 0,
-	LOG,
-	LOG10,
-	SIN,
-	COS,
-	TAN,
-	COT,
-	ASIN,
-	ACOS,
-	ATAN,
-	ATAN2, // not supported yet
-	ACOT,
-	DEG,
-	RAD,
-	SQRT,
-	EXP,
-	ABS
-
-};
 
 class INPUT_EXPR_SYNTAX_ERROR: public std::exception {
 
@@ -82,7 +51,24 @@ class UNKNOWN_VARIABLE: public std::exception {
 
 public:
 	UNKNOWN_VARIABLE(const std::string& varName) {
-		m_returnMessage = "Variable not found in the input expression: " +
+		m_returnMessage = "Variable was set but not found in the input "
+			"expression: " + varName;
+	}
+
+	virtual const char* what() const noexcept {
+		return m_returnMessage.c_str();
+	}
+
+private:
+	std::string m_returnMessage;
+
+};
+
+class UNKNOWN_EXPRESSION: public std::exception {
+
+public:
+	UNKNOWN_EXPRESSION(const std::string& varName) {
+		m_returnMessage = "Unknown expression found in the input expression: " +
 			varName;
 	}
 
@@ -123,10 +109,10 @@ class MathInterpreter {
 
 	B. With variables
 		1. Have the mathematical expression you want to solve stored in a 
-		   string in infix notation. Use apostrophes before and after variable 
-		   names to mark variables.
+		   string in infix notation. Use dollar sign($) before and after 
+		   variable names to mark variables.
 
-			e.g. std::string expr = "-12.4 + exp(sin(rad('x'))) * log10('y')";
+			e.g. std::string expr = "-12.4 + exp(sin(rad($x$))) * log10($y$)";
 				 //x and y are variables.
 		
 		2. Create a MathInterpreter object and call init_with_expr() to
@@ -149,7 +135,7 @@ class MathInterpreter {
 	Notes:
 		- Function names can be all lowercase or all uppercase.
 		- Pi is recognized automatically when entered as a variable.
-			e.g. sin(2*'pi'*5) or sin(2*'PI'*5)
+			e.g. sin(2*$pi$*5) or sin(2*$PI$*5)
 
 
 	Limitations:
@@ -157,13 +143,46 @@ class MathInterpreter {
 		- Supported functions: Given under enum FUNCTION
 		- Only real numbers are supported
 		- Results are returned only as double
-*/
+*/	
+
+protected:
+	enum class BitType {
+		OPERATOR,
+		NUMBER,
+		VARIABLE,
+		FUNCTION,
+		LPARENTHESIS,
+		RPARENTHESIS,
+	};
+
+	enum class FUNCTION {
+		NONE = 0,
+		LOG,
+		LOG10,
+		SIN,
+		COS,
+		TAN,
+		COT,
+		ASIN,
+		ACOS,
+		ATAN,
+		ATAN2, // not supported yet
+		ACOT,
+		DEG,
+		RAD,
+		SQRT,
+		EXP,
+		ABS
+	};
+
+	using InputBit = std::pair<std::string, BitType>;
+	using Variable = std::pair<std::string, double>;
+	using VarTable = std::vector<Variable>;
+
+	using ConstIter = std::string::const_iterator;
 
 public:
 	MathInterpreter() = default;
-
-	const std::string& input_expr() const { return m_inputExpr; }
-	const vector_string& rpn() const { return m_rpn; }
 
 	double calculate();
 
@@ -172,37 +191,51 @@ public:
 
 	virtual ~MathInterpreter() = default;
 
-private:
+protected:
+	std::stack<InputBit> m_operatorStack;
+	std::queue<InputBit> m_outputQueue;
+
+	std::stack<double> m_numberStack;
+
 	std::string m_inputExpr;
-	vector_string m_rpn;
-	std::string m_calcMap;
 
-	vector_Variable m_vars;
+	std::vector<InputBit> m_inputBits;
+	std::vector<InputBit> m_rpn;
 
-	bool m_isOperator(const std::string::const_iterator& it,
-		const std::string::const_iterator& itBegin) const;
-	bool m_isOperator(const std::string& token) const;
+	VarTable m_varTable;
 
-	bool m_isNumber(const std::string::const_iterator& it,
-		const std::string::const_iterator& itBegin) const;
-	bool m_isNumber(const std::string& token) const;
+	bool m_isOperator(const ConstIter& it, 
+		const ConstIter& itBegin, const ConstIter& itEnd) const noexcept;
+	bool m_isNumber(const ConstIter& it,
+		const ConstIter& itBegin, const ConstIter& itEnd) const noexcept;
+	FUNCTION m_isFunction(const std::string& token) const noexcept;
+	size_t m_isVariable(const std::string& token) const noexcept;
 
-	int m_isVariable(const std::string& token) const;
-	bool m_variableExists(const std::string& varName) const;
+	InputBit m_extract_operator(ConstIter& it, 
+		const ConstIter& itBegin, const ConstIter& itEnd) const;
+	InputBit m_extract_number(ConstIter& it, 
+		const ConstIter& itBegin, const ConstIter& itEnd) const;
+	InputBit m_extract_variable(ConstIter& it,
+		const ConstIter& itBegin, const ConstIter& itEnd) const;
+	InputBit m_extract_function(ConstIter& it,
+		const ConstIter& itBegin, const ConstIter& itEnd) const;
+	InputBit m_extract_parenthesis(ConstIter& it, 
+		const ConstIter& itEnd) const noexcept;
 
-	FUNCTION m_isFunction(const std::string& token) const;
+	void m_handle_operator(const InputBit& operatorBit);
+	void m_handle_variable(const InputBit& variableBit);
+	void m_handle_rParenthesis(const InputBit& parenthesisBit);	
 
-	int m_precedence(const char& op) const;
-	int m_precedence(const std::string& op) const;
+	int m_precedence(const InputBit& operatorBit) const noexcept;
 
-	double m_calc_operator(double lVal, double rVal, char op) const;
-	double m_calc_function(double val, FUNCTION func) const;
+	double m_calc_operator(const double& lVal, const double& rVal,
+		const std::string& operatorName) const noexcept;
+	double m_calc_function(const double& val, 
+		const FUNCTION& func) const noexcept;
 
+	void m_make_input_bits();
 	void m_make_rpn();
-	void m_make_calc_map();
-	void m_init();
-
-	double m_calc_rpn() const;
+	void m_validate_rpn();
 
 	std::string m_clear_whitespaces(const std::string& str) const;
 
